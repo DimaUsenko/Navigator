@@ -2,15 +2,22 @@ from itertools import chain, combinations
 import copy
 import pandas as pd
 import xlsxwriter
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets,QtGui
 from PyQt5.QtGui import QPixmap
 import time
 import window
 import sys
 import os
+import cv2
 
 import networkx as nx
 import matplotlib.pyplot as plt
+
+
+def k_from_val(v_search, d):
+    for name, ind in d.items():  # for name, age in dictionary.iteritems():  (for Python 2.x)
+        if ind == v_search:
+            return name
 
 
 class Base:
@@ -272,11 +279,14 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
             else:
                 self.r = int(self.lineEdit.text())
 
-            if all([self.roads_path, self.capable, self.request, self.path_to_save_, self.r]):  # Todo rework
+            if all([self.roads_path, self.capable, self.request, self.path_to_save_, self.r]) or True:  # Todo rework
                 start_time = time.time()
 
-                n = Navigator(self.request, self.capable, self.roads_path,
-                              path_to_save=self.path_to_save_, r=self.r)
+                # n = Navigator(self.request, self.capable, self.roads_path,
+                #              path_to_save=self.path_to_save_, r=self.r)
+                n = Navigator('temp2/Zayavka.xlsx', 'temp2/Vozmozhnosti.xlsx', 'temp2/Matritsa_rasstoyanii_774.xlsx',
+                              'C:/Users/usenk/Desktop/Project/Navigator/to_save', 500)
+
                 t2 = time.time() - start_time
                 self.label_10.setText('Время обработки: ' + str(t2)[:10] + ' c.')
                 path_s = '-'.join(n.f_path)
@@ -286,10 +296,68 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
 
                 self.label_7.setText(path_s)
                 self.label_8.setText('Пройденное расстояние: ' + str(n.min_l))
-            else:
-                print('Не все данные заполненые')
+
+                ################################################
+
+                ################################################
+
+                print('graph_ind', n.graph_ind)
+                arr = n.len_matrix
+                matrix_p = []
+                for i in range(len(arr)):
+                    for j in range(len(arr)):
+                        if int(arr[i][j]) > 0:
+                            c = [str(k_from_val(i, n.graph_ind)), str(k_from_val(j, n.graph_ind)), int(arr[i][j])/10000]
+                            matrix_p.append(c)
+                print(matrix_p)
+                try:
+                    G = nx.DiGraph()
+                    # matrix_p = [
+                    #    ('s', 'u', 10), ('s', 'x', 5), ('u', 'v', 1), ('u', 'x', 2),
+                    #    ('v', 'y', 1), ('x', 'u', 3), ('x', 'v', 5), ('x', 'y', 2),
+                    #    ('y', 's', 7), ('y', 'v', 6)]
+                    G.add_weighted_edges_from(matrix_p)
+
+                    # расчет кратчайших путей для ВСЕХ пар вершин
+                    #predecessors, _ = nx.floyd_warshall_predecessor_and_distance(G)
+                    # кратчайший путь от вершины [s] к вершине [v]
+                    #shortest_path_s_v = nx.reconstruct_path('s', 'v', predecessors)
+                    # список ребер кратчайшего пути
+                    #edges = [(a, b) for a, b in zip(shortest_path_s_v, shortest_path_s_v[1:])]
+                    # список всех весов ребер
+                    weights = nx.get_edge_attributes(G, 'weight')
+                    # позиции вершин для визуализации графа
+                    # pos = nx.spring_layout(G)
+                    pos = nx.circular_layout(G)
+                    # рисуем граф
+                    nx.draw_networkx(G, pos=pos,node_size= 1000)
+                    # рисуем веса ребер
+                    nx.draw_networkx_edge_labels(G, pos, edge_labels=weights)
+
+                    # рисуем кратчайший путь: [s] -> [v]
+                    #nx.draw_networkx_edges(G, pos=pos, edgelist=edges, edge_color="r", width=3)
+                    # заголовок графика
+                    #title = "Shortest path between [{}] and [{}]: {}" \
+                    #    .format("s", "v", " -> ".join(shortest_path_s_v))
+                    #plt.title(title)
+
+                    plt.savefig(self.path_to_save_+"/Graph.png", format="PNG")
+
+                    gr = cv2.imread(self.path_to_save_+"/Graph.png")
+                    image = cv2.resize(gr,(500,500))
+
+                    image = QtGui.QImage(image, image.shape[1],
+                                         image.shape[0], image.shape[1] * 3, QtGui.QImage.Format_RGB888)
+                    pix = QtGui.QPixmap(image)
+
+                    #self.label_5.addPixmap(pix)
+                    self.label_5.setPixmap(pix)
+
+                except Exception as E:
+                    print(E)
         except Exception as I:
             print(I)
+
 
 # p2 = Navigator('temp2/Zayavka.xlsx','temp2/Vozmozhnosti.xlsx','temp2/Matritsa_rasstoyanii_774.xlsx',500)
 
