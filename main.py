@@ -2,6 +2,8 @@ from itertools import chain, combinations
 import copy
 import pandas as pd
 import xlsxwriter
+#from PyQt5 import QtWidgets
+#from PyQt5.QtGui import QPixmap
 
 
 class Base:
@@ -33,11 +35,11 @@ class Navigator:
     def __init__(self,request_path,path_to_capactity,path_to_roads) -> None:
         
         
-        
+        self.load_roads(path_to_roads)
 
         self.load_capacities(path_to_capactity)       
 
-        self.load_roads(path_to_roads)
+        
 
         self.load_request(request_path)
 
@@ -58,24 +60,25 @@ class Navigator:
        
         self.get_fastest_path()
         
+
     def load_roads(self, path_to_roads):
         df = pd.read_excel(path_to_roads)
         df = df.fillna(0)
         out = []
-        bases_ok = []
+        self.bases_ok = []
         for row in df.itertuples():
-            print(row)
+            #print(row)
             line = []
             if int(row[2])<=500:
                 
-                bases_ok.append(row[1])
+                self.bases_ok.append(row[1])
             else:
                 df = df.drop(row[0], 0)
             #for i in range(2,len(row)):
             #    line.append(row[i])
             #out.append(line)
         for c_name in df.columns:
-            if c_name!='Unnamed: 0' and c_name not in bases_ok:
+            if c_name!='Unnamed: 0' and c_name not in self.bases_ok:
                 df = df.drop(c_name, 1)
         for row in df.itertuples():
             #print(row)
@@ -109,6 +112,11 @@ class Navigator:
         df = df.fillna(0)
         out = []
         bases_count = 0
+        #image.png
+        for row in df.itertuples():
+            if row[1] not in self.bases_ok:
+                df = df.drop(row[0], 0)
+        print(df)
         for row in df.itertuples():
             line = []
             for i in range(2,len(row)):
@@ -123,7 +131,8 @@ class Navigator:
         for ci_ in df.columns.values.tolist()[1:]:
             self.ci[ci_] = 0
         
-
+        for line in out:
+            print(line)
         self.bases_capacity = out
 
     def load_request(self,path_to_request):
@@ -221,10 +230,21 @@ class Navigator:
                 #print(base.name, base.current_mean)
             
         workbook.close()
-      
-            
-                    
-
 #p1 = Navigator('temp/request1.xlsx','temp/capacity.xlsx','temp/roads.xlsx')
 p2 = Navigator('temp2/Zayavka.xlsx','temp2/Vozmozhnosti.xlsx','temp2/Matritsa_rasstoyanii_774.xlsx')
 #print(len(p1.all_paths))
+
+
+#class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
+#    def __init__(self):
+#        super().__init__()
+#def main():
+#
+#    app = QtWidgets.QApplication(sys.argv)
+#    window = MainApp()
+#    window.show()
+#    app.exec_()
+#
+#
+#if __name__ == '__main__':
+#    main()
