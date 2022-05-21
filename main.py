@@ -84,7 +84,7 @@ class Navigator:
                 df = df.drop(row[0], 0)
 
         for c_name in df.columns:
-            if c_name != 'Unnamed: 0' and c_name not in self.bases_ok:
+            if c_name != 'Unnamпed: 0' and c_name not in self.bases_ok:
                 df = df.drop(c_name, 1)
         for row in df.itertuples():
 
