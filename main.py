@@ -2,7 +2,7 @@ from itertools import chain, combinations
 import copy
 import pandas as pd
 import xlsxwriter
-from PyQt5 import QtWidgets,QtGui
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtGui import QPixmap
 import time
 import window
@@ -42,65 +42,76 @@ class Base:
 
 
 class Navigator:
-    def __init__(self, request_path, path_to_capactity, path_to_roads, path_to_save, r):
-        self.r = r
-        self.path_to_save = path_to_save
-
-        self.load_roads(path_to_roads)
+    def __init__(self, request_path, path_to_capactity, path_to_roads, path_for_save, radius) -> None:
+        self.path_for_save = path_for_save
+        self.radius = radius
 
         self.load_capacities(path_to_capactity)
 
+        self.load_roads(path_to_roads)
+
         self.load_request(request_path)
 
-        # print(f'Запрос из {self.start_base}:')
-        # print(dict(zip(self.ci.keys(), self.requset)))
+        print(f'Запрос из {self.start_base}:')
+        print(dict(zip(self.ci.keys(), self.requset)))
 
         self.get_all_paths(self.start_base)
 
-        # print('All pathes', len(self.all_paths))
+        print('All pathes', len(self.all_paths))
 
         self.ch_paths()
 
-        # print('All check pathes', len(self.checked_paths))
+        print('All check pathes', len(self.checked_paths))
 
         for path in self.checked_paths:
             path.insert(0, self.start_base)
             path.append(self.start_base)
 
         self.get_fastest_path()
-        print(self.f_path)
 
     def load_roads(self, path_to_roads):
         df = pd.read_excel(path_to_roads)
         df = df.fillna(0)
         out = []
-        self.bases_ok = []
+        bases_ok = []
         for row in df.itertuples():
+            print(row)
+            line = []
+            if int(row[2]) <= self.radius:
 
-            if int(row[2]) <= self.r:
-
-                self.bases_ok.append(row[1])
+                bases_ok.append(row[1])
             else:
                 df = df.drop(row[0], 0)
-
+            # for i in range(2,len(row)):
+            #    line.append(row[i])
+            # out.append(line)
         for c_name in df.columns:
-            if c_name != 'Unnamпed: 0' and c_name not in self.bases_ok:
+            if c_name != 'Unnamed: 0' and c_name not in bases_ok:
                 df = df.drop(c_name, 1)
         for row in df.itertuples():
-
+            # print(row)
             line = []
             for i in range(2, len(row)):
                 line.append(int(row[i]))
             out.append(line)
+        # for i in out:
+        #    print(i)
+        print(df)
+        # Проверка того, что матрица квадратная
         m = len(out)
         for line in out:
             if len(line) != m:
                 raise ValueError
+
+        # Создание graph_ind
+
         self.graph_ind = {}
         ind = 0
         for base in df.columns.values.tolist()[1:]:
             self.graph_ind[str(base)] = int(ind)
             ind += 1
+
+        print('Кол-во всевозможных Баз исходя из roads', len(out))
 
         self.len_matrix = out
 
@@ -109,21 +120,21 @@ class Navigator:
         df = df.fillna(0)
         out = []
         bases_count = 0
-        # image.png
-        for row in df.itertuples():
-            if row[1] not in self.bases_ok:
-                df = df.drop(row[0], 0)
         for row in df.itertuples():
             line = []
             for i in range(2, len(row)):
-                self.ci_col = len(row) - 2
                 line.append(row[i])
             out.append(line)
             bases_count += 1
+        print('Кол-во всевозможных Си исходя из capactiy',
+              len(row) - 2)  # Т.к в pd 0-ый элемент - индекс, 1-ый элемент - имя базы
+        self.ci_col = len(row) - 2
+        print('Кол-во всевозможных Баз исходя из capactiy', bases_count)
 
         self.ci = {}
         for ci_ in df.columns.values.tolist()[1:]:
             self.ci[ci_] = 0
+
         self.bases_capacity = out
 
     def load_request(self, path_to_request):
@@ -192,13 +203,12 @@ class Navigator:
         paths_lenghts = []
         for i in range(len(self.checked_paths)):
             paths_lenghts.append(self.get_path_len(self.checked_paths[i]))
-        # print(self.path_to_save + '/output.xlsx')
-        workbook = xlsxwriter.Workbook(self.path_to_save + '/output.xlsx')
-        worksheet = workbook.add_worksheet()
 
+        workbook = xlsxwriter.Workbook(self.path_for_save + '/output.xlsx')
+        worksheet = workbook.add_worksheet()
         self.min_l = min(paths_lenghts)
         self.f_path = copy.copy(self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
-
+        print('Самый короткий путь: ', min(paths_lenghts), self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
         worksheet.write('A1', 'Старт:' + str(self.start_base))
         worksheet.write('B1', 'Длина:' + str(min(paths_lenghts)))
         curr_line = 2
@@ -213,6 +223,7 @@ class Navigator:
             curr_base = bases[base_ind]
             for ind, value in enumerate(request):
                 request[ind] -= curr_base.update_value(ind, value)
+        # print('----------')
         for base in bases:
 
             if any(base.current_mean):
@@ -243,12 +254,15 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
         self.pushButton_6.clicked.connect(self.procc_req)
         self.pushButton_5.clicked.connect(self.select_save)
 
-        self.path_to_save_ = 'C:/Users/usenk/Desktop/Project/Navigator/to_save'
-        self.r = 500
-        self.roads_path, self.capable, self.request = 0, 0, 0
+        # self.path_to_save_ = 'C:/Users/usenk/Desktop/Project/Navigator/to_save'
 
+    #
+    # self.r = 500
+    # self.roads_path, self.capable, self.request = 0, 0, 0
+    #
     def select_save(self):
         self.path_to_save_ = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Folder')
+        print(self.path_to_save_)
 
     def openDocs(self):
         try:
@@ -260,46 +274,41 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
         self.roads_path, _ = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                    'Open Roads File', 'temp2/')
         self.label.setText("Файл: " + os.path.basename(self.roads_path))
+        print(self.roads_path)
 
     def load_capable(self):
         self.capable, _ = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                 'Open Capable File', 'temp2/')
         self.label_2.setText("Файл: " + os.path.basename(self.capable))
+        print(self.capable)
 
     def load_request(self):
         self.request, _ = QtWidgets.QFileDialog.getOpenFileName(self,
                                                                 'Open Capable File', 'temp2/')
         self.label_3.setText("Файл: " + os.path.basename(self.request))
+        print(self.request)
 
     def procc_req(self):
-        print(self.path_to_save_, self.r)
         try:
-            if self.lineEdit.text() == '':
-                self.r = 500
+            if not self.lineEdit.text():
+                self.rad = 500
             else:
-                self.r = int(self.lineEdit.text())
+                self.rad = int(self.lineEdit.text())
 
-            if all([self.roads_path, self.capable, self.request, self.path_to_save_, self.r]) or True:  # Todo rework
+            if all([self.request, self.capable, self.roads_path,
+                                                     self.path_to_save_, self.rad]):
                 start_time = time.time()
-
-                # n = Navigator(self.request, self.capable, self.roads_path,
-                #              path_to_save=self.path_to_save_, r=self.r)
-                n = Navigator('temp2/Zayavka.xlsx', 'temp2/Vozmozhnosti.xlsx', 'temp2/Matritsa_rasstoyanii_774.xlsx',
-                              'C:/Users/usenk/Desktop/Project/Navigator/to_save', 500)
+                n = Navigator(self.request, self.capable, self.roads_path,
+                                                         self.path_to_save_, self.rad)
 
                 t2 = time.time() - start_time
+
                 self.label_10.setText('Время обработки: ' + str(t2)[:10] + ' c.')
                 path_s = '-'.join(n.f_path)
-
                 self.label_12.setText(str(len(n.all_paths)))
                 self.label_14.setText(str(len(n.checked_paths)))
-
                 self.label_7.setText(path_s)
                 self.label_8.setText('Пройденное расстояние: ' + str(n.min_l))
-
-                ################################################
-
-                ################################################
 
                 print('graph_ind', n.graph_ind)
                 arr = n.len_matrix
@@ -307,56 +316,27 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                 for i in range(len(arr)):
                     for j in range(len(arr)):
                         if int(arr[i][j]) > 0:
-                            c = [str(k_from_val(i, n.graph_ind)), str(k_from_val(j, n.graph_ind)), int(arr[i][j])/10000]
+                            c = [str(k_from_val(i, n.graph_ind)), str(k_from_val(j, n.graph_ind)), int(arr[i][j]) / 10000]
                             matrix_p.append(c)
                 print(matrix_p)
-                try:
-                    G = nx.DiGraph()
-                    # matrix_p = [
-                    #    ('s', 'u', 10), ('s', 'x', 5), ('u', 'v', 1), ('u', 'x', 2),
-                    #    ('v', 'y', 1), ('x', 'u', 3), ('x', 'v', 5), ('x', 'y', 2),
-                    #    ('y', 's', 7), ('y', 'v', 6)]
-                    G.add_weighted_edges_from(matrix_p)
 
-                    # расчет кратчайших путей для ВСЕХ пар вершин
-                    #predecessors, _ = nx.floyd_warshall_predecessor_and_distance(G)
-                    # кратчайший путь от вершины [s] к вершине [v]
-                    #shortest_path_s_v = nx.reconstruct_path('s', 'v', predecessors)
-                    # список ребер кратчайшего пути
-                    #edges = [(a, b) for a, b in zip(shortest_path_s_v, shortest_path_s_v[1:])]
-                    # список всех весов ребер
-                    weights = nx.get_edge_attributes(G, 'weight')
-                    # позиции вершин для визуализации графа
-                    # pos = nx.spring_layout(G)
-                    pos = nx.circular_layout(G)
-                    # рисуем граф
-                    nx.draw_networkx(G, pos=pos,node_size= 1000)
-                    # рисуем веса ребер
-                    nx.draw_networkx_edge_labels(G, pos, edge_labels=weights)
-
-                    # рисуем кратчайший путь: [s] -> [v]
-                    #nx.draw_networkx_edges(G, pos=pos, edgelist=edges, edge_color="r", width=3)
-                    # заголовок графика
-                    #title = "Shortest path between [{}] and [{}]: {}" \
-                    #    .format("s", "v", " -> ".join(shortest_path_s_v))
-                    #plt.title(title)
-
-                    plt.savefig(self.path_to_save_+"/Graph.png", format="PNG")
-
-                    gr = cv2.imread(self.path_to_save_+"/Graph.png")
-                    image = cv2.resize(gr,(500,500))
-
-                    image = QtGui.QImage(image, image.shape[1],
-                                         image.shape[0], image.shape[1] * 3, QtGui.QImage.Format_RGB888)
-                    pix = QtGui.QPixmap(image)
-
-                    #self.label_5.addPixmap(pix)
-                    self.label_5.setPixmap(pix)
-
-                except Exception as E:
-                    print(E)
-        except Exception as I:
-            print(I)
+                G = nx.DiGraph()
+                G.add_weighted_edges_from(matrix_p)
+                weights = nx.get_edge_attributes(G, 'weight')
+                pos = nx.circular_layout(G)
+                nx.draw_networkx(G, pos=pos, node_size=1000)
+                nx.draw_networkx_edge_labels(G, pos, edge_labels=weights)
+                plt.savefig(self.path_to_save_ + "/Graph.png", format="PNG")
+                image = cv2.imread(self.path_to_save_ + "/Graph.png")
+                #image = cv2.resize(gr, (500, 500))
+                image = QtGui.QImage(image, image.shape[1],
+                                     image.shape[0], image.shape[1] * 3, QtGui.QImage.Format_RGB888)
+                pix = QtGui.QPixmap(image)
+                self.label_5.setPixmap(pix)
+            else:
+                print('Заполнены не все данные')
+        except Exception as E:
+            print('Не все данные заполненые',E)
 
 
 # p2 = Navigator('temp2/Zayavka.xlsx','temp2/Vozmozhnosti.xlsx','temp2/Matritsa_rasstoyanii_774.xlsx',500)
@@ -367,3 +347,5 @@ app = QtWidgets.QApplication(sys.argv)
 window = MainApp()
 window.show()
 app.exec_()
+# n = Navigator('temp2/Zayavka.xlsx', 'temp2/Vozmozhnosti.xlsx', 'temp2/Matritsa_rasstoyanii_774.xlsx',
+#                          'C:\\Users\\usenk\\Desktop\Project\\Navigator\\to_save', 500)
