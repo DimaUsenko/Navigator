@@ -211,9 +211,9 @@ class Navigator:
 
         self.min_l = min(paths_lenghts)
         self.f_path = copy.copy(self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
-        #print('Самый короткий путь: ', min(paths_lenghts), self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
-        worksheet.write('A1', 'Старт:' + str(self.start_base),bold)
-        worksheet.write('B1', 'Длина:' + str(min(paths_lenghts)),bold)
+        # print('Самый короткий путь: ', min(paths_lenghts), self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
+        worksheet.write('A1', 'Старт:' + str(self.start_base), bold)
+        worksheet.write('B1', 'Длина:' + str(min(paths_lenghts)), bold)
         curr_line = 2
         path = self.checked_paths[paths_lenghts.index(min(paths_lenghts))]
         request = copy.copy(self.requset)
@@ -234,12 +234,12 @@ class Navigator:
 
         for base in bases:
             if any(base.current_mean):
-                worksheet.write(f'A{row}', 'База: ',bold)
-                worksheet.write(f'B{row}', str(base.name),bold)
-                #row +=1
+                worksheet.write(f'A{row}', 'База: ', bold)
+                worksheet.write(f'B{row}', str(base.name), bold)
+                # row +=1
                 expenses = list(zip(self.ci.keys(), base.current_mean))
                 for item, cost in (expenses):
-                    if cost!=0:
+                    if cost != 0:
                         worksheet.write(row, col, item)
                         worksheet.write(row, col + 1, cost)
                         row += 1
@@ -308,10 +308,10 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                 self.rad = int(self.lineEdit.text())
 
             if all([self.request, self.capable, self.roads_path,
-                                                     self.path_to_save_, self.rad]):
+                    self.path_to_save_, self.rad]):
                 start_time = time.time()
                 n = Navigator(self.request, self.capable, self.roads_path,
-                                                         self.path_to_save_, self.rad)
+                              self.path_to_save_, self.rad)
                 ##n = Navigator('temp2/Zayavka.xlsx', 'temp2/Vozmozhnosti.xlsx', 'temp2/Matritsa_rasstoyanii_774.xlsx',
                 #              'C:/Users/usenk/Desktop/Project/Navigator/to_save', 500)
                 t2 = time.time() - start_time
@@ -329,7 +329,8 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                 for i in range(len(arr)):
                     for j in range(len(arr)):
                         if int(arr[i][j]) > 0:
-                            c = [str(k_from_val(i, n.graph_ind)), str(k_from_val(j, n.graph_ind)), int(arr[i][j]) / 10000]
+                            c = [str(k_from_val(i, n.graph_ind)), str(k_from_val(j, n.graph_ind)),
+                                 int(arr[i][j]) / 10000]
                             matrix_p.append(c)
                 print(matrix_p)
 
@@ -341,7 +342,7 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                 nx.draw_networkx_edge_labels(G, pos, edge_labels=weights)
                 plt.savefig(self.path_to_save_ + "/Graph.png", format="PNG")
                 image = cv2.imread(self.path_to_save_ + "/Graph.png")
-                #image = cv2.resize(gr, (500, 500))
+                # image = cv2.resize(gr, (500, 500))
                 image = QtGui.QImage(image, image.shape[1],
                                      image.shape[0], image.shape[1] * 3, QtGui.QImage.Format_RGB888)
                 pix = QtGui.QPixmap(image)
@@ -349,7 +350,7 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
             else:
                 print('Заполнены не все данные')
         except Exception as E:
-            print('Не все данные заполненые',E)
+            print('Не все данные заполненые', E)
 
 
 # p2 = Navigator('temp2/Zayavka.xlsx','temp2/Vozmozhnosti.xlsx','temp2/Matritsa_rasstoyanii_774.xlsx',500)
