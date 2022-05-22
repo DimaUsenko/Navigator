@@ -206,11 +206,14 @@ class Navigator:
 
         workbook = xlsxwriter.Workbook(self.path_for_save + '/output.xlsx')
         worksheet = workbook.add_worksheet()
+
+        bold = workbook.add_format({'bold': True})
+
         self.min_l = min(paths_lenghts)
         self.f_path = copy.copy(self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
-        print('Самый короткий путь: ', min(paths_lenghts), self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
-        worksheet.write('A1', 'Старт:' + str(self.start_base))
-        worksheet.write('B1', 'Длина:' + str(min(paths_lenghts)))
+        #print('Самый короткий путь: ', min(paths_lenghts), self.checked_paths[paths_lenghts.index(min(paths_lenghts))])
+        worksheet.write('A1', 'Старт:' + str(self.start_base),bold)
+        worksheet.write('B1', 'Длина:' + str(min(paths_lenghts)),bold)
         curr_line = 2
         path = self.checked_paths[paths_lenghts.index(min(paths_lenghts))]
         request = copy.copy(self.requset)
@@ -224,13 +227,22 @@ class Navigator:
             for ind, value in enumerate(request):
                 request[ind] -= curr_base.update_value(ind, value)
         # print('----------')
-        for base in bases:
+        row = 2
+        col = 0
 
+        # Iterate over the data and write it out row by row.
+
+        for base in bases:
             if any(base.current_mean):
-                worksheet.write(f'A{curr_line}', str(base.name))
-                worksheet.write(f'B{curr_line}', f'Отгруженное количество Cи: {base.current_mean}')
-                curr_line += 1
-                # print(base.name, base.current_mean)
+                worksheet.write(f'A{row}', 'База: ',bold)
+                worksheet.write(f'B{row}', str(base.name),bold)
+                #row +=1
+                expenses = list(zip(self.ci.keys(), base.current_mean))
+                for item, cost in (expenses):
+                    if cost!=0:
+                        worksheet.write(row, col, item)
+                        worksheet.write(row, col + 1, cost)
+                        row += 1
 
         workbook.close()
 
@@ -300,7 +312,8 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                 start_time = time.time()
                 n = Navigator(self.request, self.capable, self.roads_path,
                                                          self.path_to_save_, self.rad)
-
+                ##n = Navigator('temp2/Zayavka.xlsx', 'temp2/Vozmozhnosti.xlsx', 'temp2/Matritsa_rasstoyanii_774.xlsx',
+                #              'C:/Users/usenk/Desktop/Project/Navigator/to_save', 500)
                 t2 = time.time() - start_time
 
                 self.label_10.setText('Время обработки: ' + str(t2)[:10] + ' c.')
