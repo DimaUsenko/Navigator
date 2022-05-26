@@ -1,0 +1,6 @@
+pandas
+PyQt5
+XlsxWriter
+opencv-python
+matplotlib
+networkx

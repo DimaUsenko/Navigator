@@ -43,6 +43,8 @@ class Base:
 
 class Navigator:
     def __init__(self, request_path, path_to_capactity, path_to_roads, path_for_save, radius) -> None:
+        self.get_start_base(request_path)
+
         self.path_for_save = path_for_save
         self.radius = radius
 
@@ -68,16 +70,27 @@ class Navigator:
             path.append(self.start_base)
 
         self.get_fastest_path()
-
+    def get_start_base(self,path_to_req):
+        df = pd.read_excel(path_to_req)
+        df = df.fillna(0)
+        for v in df['База']:
+            if v:
+                self.start_base = str(int(v))
+        #self.start_base_ind =
     def load_roads(self, path_to_roads):
         df = pd.read_excel(path_to_roads)
         df = df.fillna(0)
         out = []
         bases_ok = []
+        for ind,base_name in enumerate(df.columns):
+            #print(ind,base_name)
+            if str(base_name) == str(self.start_base):
+                print('СТАРТОВЫЙ ИНДЕКС: ', int(ind)+1)
+                self.start_base_ind = int(ind)+1
+
         for row in df.itertuples():
-            print(row)
             line = []
-            if int(row[2]) <= self.radius:
+            if int(row[self.start_base_ind]) <= self.radius:
 
                 bases_ok.append(row[1])
             else:
@@ -97,6 +110,7 @@ class Navigator:
         # for i in out:
         #    print(i)
         print(df)
+        print(df.shape)
         # Проверка того, что матрица квадратная
         m = len(out)
         for line in out:
@@ -110,7 +124,7 @@ class Navigator:
         for base in df.columns.values.tolist()[1:]:
             self.graph_ind[str(base)] = int(ind)
             ind += 1
-
+        #self.start_base_ind = self.graph_ind[self.start_base]+2
         print('Кол-во всевозможных Баз исходя из roads', len(out))
 
         self.len_matrix = out
@@ -127,7 +141,7 @@ class Navigator:
             out.append(line)
             bases_count += 1
         print('Кол-во всевозможных Си исходя из capactiy',
-              len(row) - 2)  # Т.к в pd 0-ый элемент - индекс, 1-ый элемент - имя базы
+              len(row) - 2)  # Т.к в pd 0-ый элемент - индекс, 1-ый элемент - имя базыч
         self.ci_col = len(row) - 2
         print('Кол-во всевозможных Баз исходя из capactiy', bases_count)
 
@@ -273,7 +287,7 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
     # self.roads_path, self.capable, self.request = 0, 0, 0
     #
     def select_save(self):
-        self.path_to_save_ = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Folder')
+        self.path_to_save_ = QtWidgets.QFileDialog.getExistingDirectory(self, 'Select Folder','.')
         print(self.path_to_save_)
 
     def openDocs(self):
@@ -284,19 +298,19 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
 
     def load_len_matrix(self):
         self.roads_path, _ = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                                   'Open Roads File', 'temp2/')
+                                                                   'Open Roads File', 'temp3/')
         self.label.setText("Файл: " + os.path.basename(self.roads_path))
         print(self.roads_path)
 
     def load_capable(self):
         self.capable, _ = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                                'Open Capable File', 'temp2/')
+                                                                'Open Capable File', 'temp3/')
         self.label_2.setText("Файл: " + os.path.basename(self.capable))
         print(self.capable)
 
     def load_request(self):
         self.request, _ = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                                'Open Capable File', 'temp2/')
+                                                                'Open Capable File', 'temp3/')
         self.label_3.setText("Файл: " + os.path.basename(self.request))
         print(self.request)
 
@@ -323,7 +337,7 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                 self.label_7.setText(path_s)
                 self.label_8.setText('Пройденное расстояние: ' + str(n.min_l))
 
-                print('graph_ind', n.graph_ind)
+                #print('graph_ind', n.graph_ind)
                 arr = n.len_matrix
                 matrix_p = []
                 for i in range(len(arr)):
@@ -332,7 +346,7 @@ class MainApp(QtWidgets.QMainWindow, window.Ui_MainWindow):
                             c = [str(k_from_val(i, n.graph_ind)), str(k_from_val(j, n.graph_ind)),
                                  int(arr[i][j]) / 10000]
                             matrix_p.append(c)
-                print(matrix_p)
+                #print(matrix_p)
 
                 G = nx.DiGraph()
                 G.add_weighted_edges_from(matrix_p)
